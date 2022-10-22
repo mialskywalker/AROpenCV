@@ -10,6 +10,9 @@ imgTarget = cv2.imread('TargetImage.jpg')
 # Importing the video
 myVid = cv2.VideoCapture('video.mp4')
 
+detection = False
+frameCounter = 0
+
 success, imgVideo = myVid.read()
 
 # Resize video with image size
@@ -22,10 +25,22 @@ kp1, des1 = orb.detectAndCompute(imgTarget, None)
 # imgTarget = cv2.drawKeypoints(imgTarget, kp1, None)
 
 while True:
+
+
     successful, imgWebcam = cap.read()
     imgAug = imgWebcam.copy()
     kp2, des2 = orb.detectAndCompute(imgWebcam, None)
     # imgWebcam = cv2.drawKeypoints(imgWebcam, kp2, None)
+
+    if not detection:
+        myVid.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        frameCounter = 0
+    else:
+        if frameCounter == myVid.get(cv2.CAP_PROP_FRAME_COUNT):
+            myVid.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            frameCounter = 0
+        success, imgVideo = myVid.read()
+        imgVideo = cv2.resize(imgVideo, (wT, hT))
 
     # Brute-Force matcher to compare key points
     bf = cv2.BFMatcher()
@@ -39,6 +54,7 @@ while True:
 
     # Homography
     if len(good) > 20:
+        detection = True
         srcPts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
         dstPts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
 
@@ -66,4 +82,5 @@ while True:
     cv2.imshow('ImgTarget', imgTarget)
     cv2.imshow('myVideo', imgVideo)
     cv2.imshow('Webcam', imgWebcam)
-    cv2.waitKey(0)
+    cv2.waitKey(1)
+    frameCounter += 1
